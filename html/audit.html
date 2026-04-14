@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUDIT LOG // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; width: 100%; height: 100vh; }
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        
+        /* Table Styling for Audit Report */
+        .audit-table-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 24px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        th {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-blue);
+            padding: 16px;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-family: monospace;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .export-btn {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .export-btn:hover {
+            background-color: #059669;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px;">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+                    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+                    <a href="signature.html" class="nav-link">Digital Signature</a>
+                    <a href="verify.html" class="nav-link">Verify Integrity</a>
+                    <a href="ledger.html" class="nav-link">Blockchain Ledger</a>
+                    <a href="vault.html" class="nav-link">The Vault (AES-256)</a>
+                    <a href="merkle.html" class="nav-link">Merkle Tree</a>
+                    <a href="audit.html" class="nav-link active">Security Audit Log</a>
+                    <a href="steganography.html" class="nav-link active">Steganography</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                <div>
+                    <h2 style="font-size: 28px;">SECURITY AUDIT LOG</h2>
+                    <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">Official System Activity Record</p>
+                </div>
+                <button class="export-btn" onclick="exportToCSV()">DOWNLOAD CSV REPORT</button>
+            </header>
+
+            <div class="audit-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Block ID</th>
+                            <th>Action / Document</th>
+                            <th>Cryptographic Hash (Integrity Key)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-body">
+                        </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const auditBody = document.getElementById('audit-body');
+            const ledger = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+
+            if (ledger.length === 0) {
+                auditBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 50px; color: var(--text-muted);">No records found in local memory.</td></tr>`;
+                return;
+            }
+
+            auditBody.innerHTML = ledger.map(entry => `
+                <tr>
+                    <td>${entry.timestamp}</td>
+                    <td style="color: var(--primary-blue);">${entry.id}</td>
+                    <td>${entry.document}</td>
+                    <td style="font-size: 11px; color: #10b981;">${entry.hash}</td>
+                </tr>
+            `).join('');
+        });
+
+        function exportToCSV() {
+            const ledger = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+            if (ledger.length === 0) {
+                alert("No data available to export.");
+                return;
+            }
+
+            // Create CSV header
+            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Block_ID,Document,Hash\n";
+
+            // Add rows
+            ledger.forEach(entry => {
+                let row = `${entry.timestamp},${entry.id},${entry.document},${entry.hash}`;
+                csvContent += row + "\n";
+            });
+
+            // Trigger Download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "SECURE_AUTH_AUDIT_LOG.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

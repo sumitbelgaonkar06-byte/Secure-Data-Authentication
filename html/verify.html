@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERIFY INTEGRITY // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; width: 100%; height: 100vh; }
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+        
+        .verify-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        textarea, input[type="text"], input[type="file"] {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        
+        textarea:focus, input[type="text"]:focus { outline: none; border-color: var(--primary-blue); }
+
+        /* Status Output Animations & Styles */
+        .status-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            border-radius: 8px;
+            border: 2px dashed var(--border-color);
+            transition: all 0.3s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .status-authentic {
+            border-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-tampered {
+            border-color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.1);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .status-icon { font-size: 48px; margin-bottom: 10px; }
+        .status-title { font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+        .status-desc { font-size: 13px; color: var(--text-muted); margin-top: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px;">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                   <nav>
+    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+    <a href="signature.html" class="nav-link">Digital Signature</a>
+    <a href="verify.html" class="nav-link">Verify Integrity</a>
+    <a href="ledger.html" class="nav-link">Blockchain Ledger</a> </nav>
+    <a href="vault.html" class="nav-link active">The Vault (AES-256)</a>
+    <a href="merkle.html" class="nav-link active">Merkle Tree</a>
+    <a href="audit.html" class="nav-link active">Security Audit Log</a>
+    <a href="steganography.html" class="nav-link active">Steganography</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h2 style="font-size: 28px;">Welcome, <span id="operator-display" style="color: var(--primary-blue);">OPERATOR</span></h2>
+                    <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">Data Verification & Tamper Detection</p>
+                </div>
+                <div style="text-align: right;">
+                    <p id="sys-time" style="font-family: monospace; color: var(--text-muted); font-size: 14px;"></p>
+                </div>
+            </header>
+
+            <div class="verify-layout">
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Upload Document to Test</h3>
+                    
+                    <label class="form-label">Step 1: Provide the Document or Text</label>
+                    <textarea id="verify-text" rows="2" placeholder="Type data here..."></textarea>
+                    <div style="text-align: center; margin: 5px 0; color: var(--text-muted); font-size: 12px;">-- OR --</div>
+                    <input type="file" id="verify-file" style="padding: 8px;">
+
+                    <label class="form-label" style="margin-top: 15px;">Step 2: Paste Original Hash for Comparison</label>
+                    <input type="text" id="original-hash" placeholder="Paste the 64-character SHA-256 hash here...">
+
+                    <button onclick="runVerification()" style="background-color: var(--primary-blue); margin-top: 20px;">RUN INTEGRITY CHECK</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    
+                    <div class="card">
+                        <h3 style="margin-bottom: 15px;">Diagnostic Result</h3>
+                        
+                        <div id="status-panel" class="status-panel">
+                            <div id="status-icon" class="status-icon">🔍</div>
+                            <h4 id="status-title" class="status-title" style="color: var(--text-main);">Awaiting Data</h4>
+                            <p id="status-desc" class="status-desc">Upload a file and provide the original hash to begin scan.</p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background-color: rgba(59, 130, 246, 0.05);">
+                        <h3 style="color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">SYSTEM LEDGER SEARCH:</h3>
+                        <p id="ledger-result" style="font-size: 13px; font-family: monospace; color: var(--primary-blue);">
+                            Ledger cross-reference will appear here after verification.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Setup Header Data
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedName = localStorage.getItem("operatorName");
+            if (savedName) document.getElementById("operator-display").innerText = savedName.toUpperCase();
+        });
+
+        setInterval(() => { document.getElementById('sys-time').innerText = new Date().toLocaleString(); }, 1000);
+
+        async function runVerification() {
+            const textInput = document.getElementById('verify-text').value;
+            const fileInput = document.getElementById('verify-file').files[0];
+            const originalHash = document.getElementById('original-hash').value.trim().toLowerCase();
+            
+            const statusPanel = document.getElementById('status-panel');
+            const statusIcon = document.getElementById('status-icon');
+            const statusTitle = document.getElementById('status-title');
+            const statusDesc = document.getElementById('status-desc');
+            const ledgerResult = document.getElementById('ledger-result');
+
+            if (!originalHash) {
+                alert("You must provide an original hash to compare against!");
+                return;
+            }
+
+            let buffer;
+            if (fileInput) {
+                buffer = await fileInput.arrayBuffer();
+            } else if (textInput) {
+                const encoder = new TextEncoder();
+                buffer = encoder.encode(textInput);
+            } else {
+                alert("Please provide the text or file to test!");
+                return;
+            }
+
+            try {
+                // 1. Generate hash of the newly uploaded file
+                statusTitle.innerText = "Scanning...";
+                const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const newHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                // 2. The Moment of Truth: Compare them!
+                statusPanel.className = "status-panel"; // Reset classes
+
+                if (newHash === originalHash) {
+                    // SUCCESS!
+                    statusPanel.classList.add("status-authentic");
+                    statusIcon.innerText = "✅";
+                    statusTitle.innerText = "DATA IS AUTHENTIC";
+                    statusTitle.style.color = "#10b981";
+                    statusDesc.innerText = "Hashes match perfectly. Zero tampering detected.";
+                } else {
+                    // FAILED!
+                    statusPanel.classList.add("status-tampered");
+                    statusIcon.innerText = "❌";
+                    statusTitle.innerText = "TAMPERING DETECTED";
+                    statusTitle.style.color = "#ef4444";
+                    statusDesc.innerText = `WARNING: The data has been modified. \nExpected: ${originalHash.substring(0,8)}...\nGot: ${newHash.substring(0,8)}...`;
+                }
+
+                // 3. Bonus: Check the Ledger!
+                const ledger = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+                const foundRecord = ledger.find(record => record.hash === newHash);
+
+                if (foundRecord) {
+                    ledgerResult.innerHTML = `MATCH FOUND IN LEDGER.<br>Block ID: ${foundRecord.id}<br>Timestamp: ${foundRecord.timestamp}`;
+                    ledgerResult.style.color = "#10b981";
+                } else {
+                    ledgerResult.innerHTML = `NOTICE: This hash is not registered in your local blockchain ledger.`;
+                    ledgerResult.style.color = "var(--text-muted)";
+                }
+
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

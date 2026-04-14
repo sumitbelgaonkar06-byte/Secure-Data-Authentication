@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERKLE TREE // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; width: 100%; height: 100vh; background-color: #080808; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        
+        .main-content { padding: 40px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        
+        .merkle-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 30px; }
+        
+        button {
+            padding: 10px 20px; background-color: var(--primary-blue); color: white; border: none; border-radius: 6px; 
+            font-weight: 700; cursor: pointer; transition: background 0.3s; letter-spacing: 1px;
+        }
+        button:hover { background-color: #2563eb; }
+
+        /* MERKLE TREE VISUALS */
+        #tree-container {
+            display: flex;
+            flex-direction: column-reverse; /* Builds from bottom up */
+            align-items: center;
+            gap: 40px;
+            flex-grow: 1;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .tree-level {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        .node {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--primary-blue);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 120px;
+            position: relative;
+        }
+
+        /* The Root Node gets special styling */
+        .tree-level:last-child .node {
+            border-color: #10b981;
+            color: #10b981;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .node-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .empty-state { text-align: center; color: var(--text-muted); padding: 50px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar" style="width: 250px; padding: 30px; border-right: 1px solid rgba(255,255,255,0.1);">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px; color: var(--primary-blue);">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+                    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+                    <a href="signature.html" class="nav-link">Digital Signature</a>
+                    <a href="verify.html" class="nav-link">Verify Integrity</a>
+                    <a href="ledger.html" class="nav-link">Blockchain Ledger</a>
+                    <a href="vault.html" class="nav-link">The Vault (AES-256)</a>
+                    <a href="merkle.html" class="nav-link active">Merkle Tree</a>
+                    <a href="audit.html" class="nav-link active">Security Audit Log</a>
+                    <a href="steganography.html" class="nav-link active">Steganography</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="merkle-header">
+                <div>
+                    <h2 style="font-size: 28px; margin: 0;">CRYPTOGRAPHIC MERKLE TREE</h2>
+                    <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">Compute the Absolute Root Hash of your Ledger</p>
+                </div>
+                <button onclick="buildTree()">GENERATE MERKLE ROOT</button>
+            </div>
+
+            <div id="tree-container">
+                <div class="empty-state">
+                    Click "Generate Merkle Root" to process your Local Ledger.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- SHA-256 Hashing Function ---
+        async function hashData(text) {
+            const msgBuffer = new TextEncoder().encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function buildTree() {
+            const container = document.getElementById('tree-container');
+            container.innerHTML = '<div style="color: var(--primary-blue);">Computing Cryptographic Tree...</div>';
+
+            // 1. Fetch hashes from Ledger
+            const ledger = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+            
+            if (ledger.length === 0) {
+                container.innerHTML = '<div class="empty-state">Ledger is empty. Generate hashes first.</div>';
+                return;
+            }
+
+            // Extract just the hashes, grab the first 8 characters for visual simplicity
+            let currentLevel = ledger.map(entry => entry.hash.substring(0, 8));
+            const allLevels = [currentLevel];
+
+            // 2. Build the Tree mathematically
+            while (currentLevel.length > 1) {
+                let nextLevel = [];
+                
+                // If odd number of nodes, duplicate the last one (Standard Merkle Rule)
+                if (currentLevel.length % 2 !== 0) {
+                    currentLevel.push(currentLevel[currentLevel.length - 1]);
+                }
+
+                // Pair and Hash
+                for (let i = 0; i < currentLevel.length; i += 2) {
+                    const pair = currentLevel[i] + currentLevel[i+1];
+                    const newHash = await hashData(pair);
+                    // Keep short for UI
+                    nextLevel.push(newHash.substring(0, 8)); 
+                }
+                
+                allLevels.push(nextLevel);
+                currentLevel = nextLevel;
+            }
+
+            // 3. Render the Tree Visually
+            container.innerHTML = ''; // Clear loading text
+            
+            allLevels.forEach((level, index) => {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'tree-level';
+                
+                let levelLabel = index === allLevels.length - 1 ? "MERKLE ROOT" : `LEVEL ${index}`;
+                if(index === 0) levelLabel = "LEDGER TRANSACTIONS";
+
+                level.forEach(hash => {
+                    const node = document.createElement('div');
+                    node.className = 'node';
+                    node.innerHTML = `
+                        <div class="node-label">${levelLabel}</div>
+                        ${hash}
+                    `;
+                    levelDiv.appendChild(node);
+                });
+
+                container.appendChild(levelDiv);
+            });
+        }
+    </script>
+</body>
+</html>

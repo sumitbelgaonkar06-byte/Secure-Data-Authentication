@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIGITAL SIGNATURE // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; width: 100%; height: 100vh; }
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+        
+        .signature-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        textarea, input[type="text"], input[type="file"] {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        
+        textarea:focus { outline: none; border-color: var(--primary-blue); }
+
+        .key-box {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--text-muted);
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+            word-break: break-all;
+            height: 80px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .output-box {
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            color: #10b981;
+            word-break: break-all;
+            min-height: 80px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px;">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                    <nav>
+    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+    <a href="signature.html" class="nav-link">Digital Signature</a>
+    <a href="verify.html" class="nav-link">Verify Integrity</a>
+    <a href="ledger.html" class="nav-link">Blockchain Ledger</a> </nav>
+    <a href="vault.html" class="nav-link active">The Vault (AES-256)</a>
+    <a href="merkle.html" class="nav-link active">Merkle Tree</a>
+    <a href="audit.html" class="nav-link active">Security Audit Log</a>
+    <a href="steganography.html" class="nav-link active">Steganography</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h2 style="font-size: 28px;">Welcome, <span id="operator-display" style="color: var(--primary-blue);">OPERATOR</span></h2>
+                    <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">RSA-2048 Digital Signature Module</p>
+                </div>
+                <div style="text-align: right;">
+                    <p id="sys-time" style="font-family: monospace; color: var(--text-muted); font-size: 14px;"></p>
+                </div>
+            </header>
+
+            <div class="signature-layout">
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">1. Identity & Key Management</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Generate an RSA-2048 Asymmetric Key Pair to establish your digital identity.</p>
+                    
+                    <button onclick="generateKeys()" style="margin-bottom: 20px;">GENERATE RSA KEY PAIR</button>
+
+                    <label class="form-label" style="color: #ef4444;">Your Private Key (Keep Secret)</label>
+                    <div class="key-box" id="private-key-display">[ Awaiting Key Generation... ]</div>
+
+                    <label class="form-label" style="color: var(--primary-blue);">Your Public Key (Share Freely)</label>
+                    <div class="key-box" id="public-key-display">[ Awaiting Key Generation... ]</div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">2. Sign Document</h3>
+                    
+                    <label class="form-label">Data to Sign</label>
+                    <textarea id="sign-input" rows="3" placeholder="Type a message or contract terms here..."></textarea>
+                    
+                    <button onclick="signData()" style="background-color: #10b981; margin-top: 10px; margin-bottom: 20px;">AUTHORIZE & SIGN DATA</button>
+
+                    <h3 style="margin-bottom: 10px;">Generated Digital Signature</h3>
+                    <p style="font-size: 12px; color: var(--text-muted);">Status: <span id="sign-status">Awaiting Signature...</span></p>
+                    
+                    <div class="output-box" id="signature-output">
+                        [ Signature output will appear here ]
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Setup Header Data
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedName = localStorage.getItem("operatorName");
+            if (savedName) document.getElementById("operator-display").innerText = savedName.toUpperCase();
+        });
+
+        setInterval(() => { document.getElementById('sys-time').innerText = new Date().toLocaleString(); }, 1000);
+
+        // --- CRYPTO LOGIC ---
+        let currentPrivateKey = null;
+        let currentPublicKey = null;
+
+        // Utility to convert raw keys to Base64 so they look cool on screen
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+            return window.btoa(binary);
+        }
+
+        async function generateKeys() {
+            try {
+                document.getElementById('private-key-display').innerText = "Generating...";
+                document.getElementById('public-key-display').innerText = "Generating...";
+
+                // Generate RSA Key Pair using Web Crypto API
+                const keyPair = await crypto.subtle.generateKey(
+                    { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+                    true,
+                    ["sign", "verify"]
+                );
+
+                currentPrivateKey = keyPair.privateKey;
+                currentPublicKey = keyPair.publicKey;
+
+                // Export to display them
+                const exportedPrivate = await crypto.subtle.exportKey("pkcs8", currentPrivateKey);
+                const exportedPublic = await crypto.subtle.exportKey("spki", currentPublicKey);
+
+                document.getElementById('private-key-display').innerText = arrayBufferToBase64(exportedPrivate);
+                document.getElementById('public-key-display').innerText = arrayBufferToBase64(exportedPublic);
+
+            } catch (error) {
+                console.error("Key Generation Failed:", error);
+            }
+        }
+
+        async function signData() {
+            const dataText = document.getElementById('sign-input').value;
+            const statusText = document.getElementById('sign-status');
+            const outputBox = document.getElementById('signature-output');
+
+            if (!currentPrivateKey) {
+                alert("You must generate a Key Pair first!");
+                return;
+            }
+            if (!dataText) {
+                alert("Please enter some data to sign!");
+                return;
+            }
+
+            try {
+                statusText.innerText = "Signing...";
+                
+                // Convert text to raw buffer
+                const encoder = new TextEncoder();
+                const dataBuffer = encoder.encode(dataText);
+
+                // Sign the data using the Private Key
+                const signatureBuffer = await crypto.subtle.sign(
+                    "RSASSA-PKCS1-v1_5",
+                    currentPrivateKey,
+                    dataBuffer
+                );
+
+                // Convert signature to Hexadecimal string for display
+                const sigArray = Array.from(new Uint8Array(signatureBuffer));
+                const sigHex = sigArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                outputBox.innerText = sigHex;
+                statusText.innerHTML = `<span style="color: #10b981;">Successfully Signed by ${localStorage.getItem("operatorName") || "Operator"}</span>`;
+                
+                // SAVE TO LEDGER
+                const newRecord = {
+                    id: "SIG_" + Math.floor(Math.random() * 1000000),
+                    timestamp: new Date().toLocaleString(),
+                    document: "Signed Text: " + dataText.substring(0, 15) + "...",
+                    hash: sigHex.substring(0, 64) + "..." // Saving a snippet of the signature
+                };
+                let ledger = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+                ledger.unshift(newRecord);
+                localStorage.setItem("blockchainLedger", JSON.stringify(ledger));
+
+            } catch (error) {
+                statusText.innerHTML = `<span style="color: #ef4444;">Error signing data</span>`;
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

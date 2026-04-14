@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STEGANOGRAPHY // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; width: 100%; height: 100vh; }
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        
+        .main-content { padding: 40px; flex-grow: 1; overflow-y: auto; }
+        .stego-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+        
+        .card { background: rgba(18, 18, 18, 0.95); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; }
+        .card-header { color: var(--primary-blue); margin-bottom: 20px; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        
+        input[type="file"], textarea {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color);
+            padding: 12px; color: white; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box;
+        }
+
+        canvas { display: none; } /* Hidden canvas for pixel processing */
+        .preview-img { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid var(--primary-blue); }
+        
+        button {
+            width: 100%; padding: 14px; border-radius: 6px; cursor: pointer; font-weight: bold;
+            transition: 0.3s; border: none; background-color: var(--primary-blue); color: white;
+        }
+        button:hover { background-color: #2563eb; }
+        .btn-decode { background-color: #8b5cf6; }
+        .btn-decode:hover { background-color: #7c3aed; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px;">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+                    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+                    <a href="signature.html" class="nav-link">Digital Signature</a>
+                    <a href="verify.html" class="nav-link">Verify Integrity</a>
+                    <a href="ledger.html" class="nav-link">Blockchain Ledger</a>
+                    <a href="vault.html" class="nav-link">The Vault (AES-256)</a>
+                    <a href="merkle.html" class="nav-link">Merkle Tree</a>
+                    <a href="audit.html" class="nav-link">Security Audit Log</a>
+                    <a href="steganography.html" class="nav-link active">Steganography</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                <h2 style="font-size: 28px;">IMAGE STEGANOGRAPHY</h2>
+                <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">Hide secret messages inside image pixel data.</p>
+            </header>
+
+            <div class="stego-grid">
+                <div class="card">
+                    <div class="card-header">> HIDE_MESSAGE</div>
+                    <label class="form-label">Step 1: Upload Carrier Image</label>
+                    <input type="file" id="upload-image" accept="image/*">
+                    
+                    <label class="form-label">Step 2: Enter Secret Message</label>
+                    <textarea id="secret-message" rows="3" placeholder="Enter message to hide..."></textarea>
+                    
+                    <button onclick="encodeMessage()">ENCODE & DOWNLOAD</button>
+                    <canvas id="canvas"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" style="color: #8b5cf6;">> EXTRACT_MESSAGE</div>
+                    <label class="form-label">Upload Encoded Image</label>
+                    <input type="file" id="decode-image" accept="image/*">
+                    
+                    <button class="btn-decode" onclick="decodeMessage()">DECODE SECRET</button>
+                    
+                    <div style="margin-top: 20px;">
+                        <label class="form-label">Extracted Result:</label>
+                        <div id="decoded-output" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 6px; min-height: 50px; color: #10b981; font-family: monospace; word-break: break-all;">
+                            Awaiting extraction...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // LSB Steganography Logic
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function encodeMessage() {
+            const fileInput = document.getElementById('upload-image');
+            const message = document.getElementById('secret-message').value + "@@@"; // Terminator
+            
+            if (!fileInput.files[0] || message.length < 4) return alert("Select image and enter message.");
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imgData.data;
+
+                    // Convert message to bits
+                    let binaryMessage = "";
+                    for (let i = 0; i < message.length; i++) {
+                        let binary = message[i].charCodeAt(0).toString(2).padStart(8, '0');
+                        binaryMessage += binary;
+                    }
+
+                    // Inject bits into LSB of pixels
+                    for (let i = 0; i < binaryMessage.length; i++) {
+                        // Change only the last bit (LSB) to match our message bit
+                        data[i * 4] = (data[i * 4] & 0xFE) | parseInt(binaryMessage[i]);
+                    }
+
+                    ctx.putImageData(imgData, 0, 0);
+                    const link = document.createElement('a');
+                    link.download = 'encoded_image.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+
+        function decodeMessage() {
+            const fileInput = document.getElementById('decode-image');
+            if (!fileInput.files[0]) return alert("Select encoded image.");
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imgData.data;
+
+                    let binaryMessage = "";
+                    let decodedMessage = "";
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        binaryMessage += (data[i] & 1).toString();
+                        
+                        if (binaryMessage.length === 8) {
+                            let charCode = parseInt(binaryMessage, 2);
+                            let char = String.fromCharCode(charCode);
+                            decodedMessage += char;
+                            binaryMessage = "";
+
+                            // Check for our terminator
+                            if (decodedMessage.endsWith("@@@")) {
+                                document.getElementById('decoded-output').innerText = decodedMessage.replace("@@@","");
+                                return;
+                            }
+                        }
+                    }
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+    </script>
+</body>
+</html>

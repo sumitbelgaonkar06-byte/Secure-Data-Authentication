@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOCKCHAIN LEDGER // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; width: 100%; height: 100vh; }
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; backdrop-filter: blur(10px); }
+
+        /* THE BLOCKCHAIN VISUALS */
+        .ledger-container {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 50px;
+        }
+
+        .block {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        /* The vertical line connecting blocks */
+        .block:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            left: 20px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% + 20px);
+            background: linear-gradient(var(--primary-blue), transparent);
+            z-index: 0;
+        }
+
+        .block-node {
+            width: 42px;
+            height: 42px;
+            background-color: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            flex-shrink: 0;
+        }
+
+        .block-content {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .block-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .block-value { font-size: 14px; color: var(--text-main); font-family: monospace; word-break: break-all; margin-top: 4px; }
+        
+        .empty-state { text-align: center; padding: 100px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px;">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+                    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+                    <a href="signature.html" class="nav-link">Digital Signature</a>
+                    <a href="verify.html" class="nav-link">Verify Integrity</a>
+                    <a href="ledger.html" class="nav-link active">Blockchain Ledger</a>
+                    <a href="vault.html" class="nav-link active">The Vault (AES-256)</a>
+                    <a href="merkle.html" class="nav-link active">Merkle Tree</a>
+                    <a href="audit.html" class="nav-link active">Security Audit Log</a>
+                    <a href="steganography.html" class="nav-link active">Steganography</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h2 style="font-size: 28px;">Welcome, <span id="operator-display" style="color: var(--primary-blue);">OPERATOR</span></h2>
+                    <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">Immutable Transaction History</p>
+                </div>
+                <div style="text-align: right;">
+                    <button onclick="clearLedger()" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; width: auto; font-size: 12px; padding: 5px 15px;">Wipe Ledger</button>
+                </div>
+            </header>
+
+            <div id="ledger-list" class="ledger-container">
+                </div>
+        </main>
+    </div>
+
+    <script>
+        // Setup Header
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedName = localStorage.getItem("operatorName");
+            if (savedName) document.getElementById("operator-display").innerText = savedName.toUpperCase();
+            loadLedger();
+        });
+
+        function loadLedger() {
+            const ledgerList = document.getElementById('ledger-list');
+            const data = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+
+            if (data.length === 0) {
+                ledgerList.innerHTML = `<div class="empty-state"><h3>No transactions found.</h3><p>Generate a hash or signature to create the first block.</p></div>`;
+                return;
+            }
+
+            ledgerList.innerHTML = data.map((block, index) => `
+                <div class="block">
+                    <div class="block-node">⛓️</div>
+                    <div class="block-content">
+                        <div>
+                            <div class="block-label">Block ID</div>
+                            <div class="block-value" style="color: var(--primary-blue); font-weight: bold;">#${block.id}</div>
+                            <div class="block-label" style="margin-top: 15px;">Timestamp</div>
+                            <div class="block-value">${block.timestamp}</div>
+                        </div>
+                        <div>
+                            <div class="block-label">Document / Data Name</div>
+                            <div class="block-value">${block.document}</div>
+                            <div class="block-label" style="margin-top: 15px;">Cryptographic Hash</div>
+                            <div class="block-value" style="color: #10b981;">${block.hash}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearLedger() {
+            if(confirm("Are you sure you want to wipe the local blockchain record?")) {
+                localStorage.removeItem("blockchainLedger");
+                loadLedger();
+            }
+        }
+    </script>
+</body>
+</html>

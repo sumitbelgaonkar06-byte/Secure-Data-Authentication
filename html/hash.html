@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HASH GENERATOR // SECURE_AUTH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* Specific layout styles for the dashboard grid and navigation */
+        .dashboard-container { display: flex; width: 100%; height: 100vh; }
+        .nav-link { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-blue); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+        
+        /* NEW: Two Column Grid for the Hash Generator */
+        .hash-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two equal columns */
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        /* Styling for the Hash Inputs */
+        textarea, select {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+        
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        /* The Output Box */
+        .output-box {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--primary-blue);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            color: #10b981; /* Green success text */
+            word-break: break-all; /* Ensures long hashes wrap nicely */
+            min-height: 80px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div>
+                <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px;">SECURE_AUTH</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">ENTERPRISE SYSTEM v2.0</p>
+                <br><br>
+                <nav>
+                    <nav>
+   <nav>
+    <a href="dashboard.html" class="nav-link">Dashboard Overview</a>
+    <a href="hash.html" class="nav-link">Data Hash Generator</a>
+    <a href="signature.html" class="nav-link">Digital Signature</a>
+    <a href="verify.html" class="nav-link">Verify Integrity</a>
+    <a href="ledger.html" class="nav-link">Blockchain Ledger</a> </nav>
+    <a href="vault.html" class="nav-link active">The Vault (AES-256)</a>
+    <a href="merkle.html" class="nav-link active">Merkle Tree</a>
+    <a href="audit.html" class="nav-link active">Security Audit Log</a>
+    <a href="steganography.html" class="nav-link active">Steganography</a>
+</nav>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h2 style="font-size: 28px;">Welcome, <span id="operator-display" style="color: var(--primary-blue);">OPERATOR</span></h2>
+                    <p style="color: var(--text-muted); margin-top: 5px; font-size: 14px;">Cryptographic Hash Generation Module</p>
+                </div>
+                <div style="text-align: right;">
+                    <p id="sys-time" style="font-family: monospace; color: var(--text-muted); font-size: 14px;"></p>
+                </div>
+            </header>
+
+            <div class="hash-layout">
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Input Data</h3>
+                    
+                    <label class="form-label">Algorithm</label>
+                    <select id="algo-select">
+                        <option value="SHA-256">SHA-256 (Recommended)</option>
+                        <option value="SHA-384">SHA-384</option>
+                        <option value="SHA-512">SHA-512</option>
+                    </select>
+
+                    <label class="form-label">Text to Hash</label>
+                    <textarea id="text-input" rows="4" placeholder="Type a message here..."></textarea>
+
+                    <div style="text-align: center; margin: 10px 0; color: var(--text-muted); font-size: 12px;">-- OR --</div>
+
+                    <label class="form-label">Upload File to Hash</label>
+                    <input type="file" id="file-input" style="padding: 8px;">
+
+                    <button onclick="generateHash()" style="margin-top: 20px;">GENERATE SECURE HASH</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    
+                    <div class="card">
+                        <h3 style="margin-bottom: 10px;">Cryptographic Output</h3>
+                        <p style="font-size: 12px; color: var(--text-muted);">Status: <span id="hash-status">Awaiting Input...</span></p>
+                        
+                        <div class="output-box" id="hash-output">
+                            [ Generated hash will appear here ]
+                        </div>
+                    </div>
+
+                    <div class="card" style="background-color: rgba(59, 130, 246, 0.05);">
+                        <h3 style="color: var(--primary-blue); margin-bottom: 10px;">Why use SHA-256?</h3>
+                        <ul style="font-size: 13px; color: var(--text-muted); padding-left: 20px; line-height: 1.6;">
+                            <li><strong>Deterministic:</strong> The same exact data will always produce the same exact hash.</li>
+                            <li><strong>Avalanche Effect:</strong> Changing a single letter completely changes the resulting hash.</li>
+                            <li><strong>One-Way Function:</strong> It is mathematically impossible to reverse the hash back into the original data.</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // 1. Setup Header Data (Name & Clock)
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedName = localStorage.getItem("operatorName");
+            if (savedName) document.getElementById("operator-display").innerText = savedName.toUpperCase();
+        });
+
+        setInterval(() => {
+            document.getElementById('sys-time').innerText = new Date().toLocaleString();
+        }, 1000);
+
+        // 2. The Actual Hashing Function (Upgraded to SAVE data)
+        async function generateHash() {
+            const textInput = document.getElementById('text-input').value;
+            const fileInput = document.getElementById('file-input').files[0];
+            const algo = document.getElementById('algo-select').value;
+            const outputBox = document.getElementById('hash-output');
+            const statusText = document.getElementById('hash-status');
+
+            let buffer;
+            let dataName = ""; // We need to know what we are saving!
+
+            if (fileInput) {
+                statusText.innerText = `Hashing File: ${fileInput.name}...`;
+                dataName = fileInput.name;
+                const arrayBuffer = await fileInput.arrayBuffer();
+                buffer = arrayBuffer;
+            } else if (textInput) {
+                statusText.innerText = "Hashing Text...";
+                // Save the first 15 letters so we know what text was hashed
+                dataName = "Text: " + textInput.substring(0, 15) + "..."; 
+                const encoder = new TextEncoder();
+                buffer = encoder.encode(textInput);
+            } else {
+                alert("Please enter text or upload a file!");
+                return;
+            }
+
+            try {
+                // Generate the hash
+                const hashBuffer = await crypto.subtle.digest(algo, buffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                // Display it on screen
+                outputBox.innerText = hashHex;
+                statusText.innerHTML = `<span style="color: #10b981;">Hash Generated & Saved Successfully</span>`;
+                
+                // ==========================================
+                // 💾 NEW: THE SAVING MECHANISM
+                // ==========================================
+                
+                // Step A: Create a secure record object
+                const newRecord = {
+                    id: "BLOCK_" + Math.floor(Math.random() * 1000000), // Fake block ID
+                    timestamp: new Date().toLocaleString(),
+                    document: dataName,
+                    hash: hashHex
+                };
+
+                // Step B: Pull the existing ledger from memory (or start a blank one)
+                let ledger = JSON.parse(localStorage.getItem("blockchainLedger")) || [];
+
+                // Step C: Add the new record to the top of the list
+                ledger.unshift(newRecord);
+
+                // Step D: Save the whole list back into the browser's memory
+                localStorage.setItem("blockchainLedger", JSON.stringify(ledger));
+                
+                console.log("Saved to Ledger:", newRecord);
+
+            } catch (error) {
+                statusText.innerHTML = `<span style="color: #ef4444;">Error generating hash</span>`;
+                console.error(error);
+            }
+        }
+    </script>
+
+</body>
+</html>
